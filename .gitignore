@@ -1,0 +1,23 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnp*
+.yarn/*
+.yarnrc.yml
+
+# Environment variables (never commit secrets!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build/output folders (if you have any)
+dist/
+build/
+out/
+
+# OS junk
+.DS_Store
+Thumbs.db
