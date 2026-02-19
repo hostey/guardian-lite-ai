@@ -1190,13 +1190,36 @@ DOM.emergencyButton.addEventListener('click', () => {
    8. FHIR LOADING
 ========================= */
 
-DOM.loadPatientBtn.addEventListener('click', () => {
-  const pid = DOM.patientIdInput.value.trim();
-  if (!pid) return;
+loadPatientBtn.addEventListener('click', async () => {
+    const pid = patientIdInput.value.trim();
+    if (!pid) return;
+    currentPatientId = pid;
+    fhirStatus.textContent = 'Loading patient data...';
+    allergiesList.innerHTML = '';
 
-  AppState.currentPatientId = pid;
-  DOM.fhirStatus.textContent = `Patient ${pid} loaded (checked server-side).`;
-  DOM.allergiesList.innerHTML = '';
+    try {
+        const response = await fetch(`/api/fhir/patient/${pid}/allergies`);
+        const data = await response.json();
+        
+        if (data.allergies && data.allergies.length > 0) {
+            fhirStatus.textContent = `✅ Patient ${pid} loaded. Found ${data.allergies.length} allerg${data.allergies.length === 1 ? 'y' : 'ies'}:`;
+            data.allergies.forEach(allergy => {
+                const tag = document.createElement('span');
+                tag.className = 'myth-tag';
+                tag.style.background = '#fef3c7';
+                tag.style.color = '#92400e';
+                tag.textContent = allergy;
+                allergiesList.appendChild(tag);
+            });
+        } else if (data.allergies && data.allergies.length === 0) {
+            fhirStatus.textContent = `✅ Patient ${pid} loaded. No known allergies.`;
+        } else {
+            fhirStatus.textContent = `⚠️ Patient ${pid} loaded, but no allergy information returned.`;
+        }
+    } catch (err) {
+        fhirStatus.textContent = '❌ Failed to load allergies. Check console.';
+        console.error('Allergy fetch error:', err);
+    }
 });
 
 /* =========================
