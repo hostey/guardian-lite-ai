@@ -1,5 +1,5 @@
 import FHIR from 'fhirclient';
-import  Client  from 'fhirclient/lib/Client';
+import Client from 'fhirclient/lib/Client';
 
 export interface BurnAssessmentData {
   burnSize: 'large' | 'small' | 'unknown';
@@ -17,8 +17,6 @@ export class FHIRService {
         throw new Error('FHIR server URL is required');
       }
       console.log(`Initializing FHIR client with server: ${fhirServerUrl}`);
-      // Cast to any because TypeScript definitions don't include patientId,
-      // but the library supports it.
       this.client = FHIR.client({
         serverUrl: fhirServerUrl,
         patientId: patientId
@@ -31,6 +29,15 @@ export class FHIRService {
   }
 
   async getAllergies(patientId: string): Promise<string[]> {
+    console.log(`[FHIRService] getAllergies called with patientId: "${patientId}"`);
+
+    // --- SIMULATED PATIENT FOR DEMO ---
+    if (patientId === 'demo-patient') {
+      console.log('🎭 Using simulated allergies for demo-patient');
+      return ['peanuts', 'penicillin', 'latex'];
+    }
+    // --- END SIMULATION ---
+
     if (!this.client) {
       const errorMsg = 'FHIR client not initialized. Cannot fetch allergies.';
       console.error(errorMsg);

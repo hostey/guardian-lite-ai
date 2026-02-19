@@ -1200,7 +1200,8 @@ loadPatientBtn.addEventListener('click', async () => {
     try {
         const response = await fetch(`/api/fhir/patient/${pid}/allergies`);
         const data = await response.json();
-        
+        console.log('Allergy API response:', data); // 👈 see what the server returns
+
         if (data.allergies && data.allergies.length > 0) {
             fhirStatus.textContent = `✅ Patient ${pid} loaded. Found ${data.allergies.length} allerg${data.allergies.length === 1 ? 'y' : 'ies'}:`;
             data.allergies.forEach(allergy => {
@@ -1221,7 +1222,6 @@ loadPatientBtn.addEventListener('click', async () => {
         console.error('Allergy fetch error:', err);
     }
 });
-
 /* =========================
    9. VOICE INPUT
 ========================= */
