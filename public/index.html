@@ -769,6 +769,28 @@
     transform: rotate(90deg);
   }
 }
+
+.reset-btn {
+    background: #64748b;
+    color: white;
+    border: none;
+    border-radius: 2rem;
+    padding: 0.6rem 1.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+.reset-btn:hover {
+    background: #475569;
+    transform: scale(1.02);
+}
+.reset-btn:active {
+    transform: scale(0.98);
+}
     </style>
 </head>
 <body>
@@ -776,8 +798,12 @@
         <!-- Left: Chat Panel -->
         <div class="chat-panel">
             <div class="chat-header">
+
                 <div class="header-row">
                     <h1><i class="fas fa-shield-heart"></i> Guardian Lite AI</h1>
+                    <button id="resetButton" class="reset-btn" title="Start over">
+            <i class="fas fa-redo-alt"></i> Reset
+        </button>
                     <button id="emergencyButton" class="emergency-btn">
                         <i class="fas fa-exclamation-triangle"></i> EMERGENCY – Call 112
                     </button>
@@ -959,6 +985,44 @@ function updateFSM(state) {
     activeNode.classList.add('active');
   }
 }
+
+function resetDemo() {
+    // Generate a new session ID
+    sessionId = 'demo-' + Date.now() + '-' + Math.random().toString(36).substring(2);
+    
+    // Clear chat messages and restore initial bot message
+    chatMessages.innerHTML = `
+        <div class="message bot">
+            <div class="avatar"><i class="fas fa-robot"></i></div>
+            <div class="bubble">
+                <p>👋 Hi! I'm Guardian Lite – your burn triage helper.</p>
+                <p><strong>Do you have a burn right now?</strong></p>
+                <div class="timestamp">just now</div>
+            </div>
+        </div>
+    `;
+    
+    // Reset progress bar and state
+    progressFill.style.width = '0%';
+    progressPercent.textContent = '0%';
+    stateText.textContent = 'CONFIRM_BURN';
+    stateBadge.className = 'state-badge';
+    
+    // Reset stats
+    statAnswered.textContent = '0/4';
+    statState.textContent = 'CONFIRM';
+    statSafety.textContent = '0';
+    startTime = Date.now();
+    safetyViolations = 0;
+    
+    // Update FSM diagram if it exists
+    if (typeof updateFSM === 'function') {
+        updateFSM('CONFIRM_BURN');
+    }
+}
+
+// Attach event listener to the reset button
+document.getElementById('resetButton').addEventListener('click', resetDemo);
 
 /* =========================
    2. DOM REFERENCES
