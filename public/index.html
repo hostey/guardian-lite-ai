@@ -198,20 +198,38 @@
         }
 
         /* Chat panel */
-        .chat-panel {
-            background: white;
-            display: flex;
-            flex-direction: column;
-            height: 700px;
-            border-right: 1px solid #e2e8f0;
-        }
+        /* ===== Chat Panel Flex Fix ===== */
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* or 700px if fixed, but flex handles it */
+  background: white;
+  border-right: 1px solid #e2e8f0;
+  overflow: hidden; /* prevent internal overflow */
+}
 
-        .chat-header {
-            padding: 1.5rem 2rem;
-            border-bottom: 1px solid #e2e8f0;
-            background: #ffffffcc;
-            backdrop-filter: blur(8px);
-        }
+.chat-header {
+  flex-shrink: 0; /* never shrink */
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffffcc;
+  backdrop-filter: blur(8px);
+}
+
+.chat-messages {
+  flex: 1 1 auto; /* grow and shrink */
+  overflow-y: auto;
+  padding: 1.5rem 2rem;
+  background: #fafdff;
+  min-height: 0; /* critical for flex to respect overflow */
+}
+
+.chat-input-area {
+  flex-shrink: 0; /* never shrink */
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e2e8f0;
+  background: white;
+}
 
         .header-row {
             display: flex;
