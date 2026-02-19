@@ -23,6 +23,167 @@
             padding: 1rem;
         }
 
+        /* ===== Mobile Responsive Styles ===== */
+@media (max-width: 768px) {
+  .app-container {
+    grid-template-columns: 1fr;  /* stack panels vertically */
+    height: auto;
+    border-radius: 1rem;
+    margin: 0.5rem;
+  }
+
+  .chat-panel {
+    height: 600px;  /* fixed height for chat on mobile */
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .info-panel {
+    max-height: 400px;  /* limit height of info panel */
+    padding: 1.5rem 1rem;
+  }
+
+  .chat-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .header-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .chat-header h1 {
+    font-size: 1.4rem;
+  }
+
+  .emergency-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .status-bar {
+    flex-wrap: wrap;
+  }
+
+  .progress-container {
+    min-width: 150px;
+  }
+
+  .chat-messages {
+    padding: 1rem;
+  }
+
+  .message .bubble {
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .input-group {
+    flex-wrap: wrap;
+  }
+
+  .input-group input {
+    padding: 0.75rem 1rem;
+    font-size: 16px;  /* prevents zoom on iOS */
+  }
+
+  .voice-btn,
+  .input-group button#sendButton {
+    height: 48px;
+    min-width: 48px;
+    font-size: 1rem;
+  }
+
+  .input-group button#sendButton {
+    padding: 0 1.5rem;
+  }
+
+  .quick-actions {
+    justify-content: center;
+  }
+
+  .quick-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .info-section {
+    padding: 1rem;
+  }
+
+  .stats-grid {
+    gap: 0.5rem;
+  }
+
+  .stat-value {
+    font-size: 1.2rem;
+  }
+
+  .myths-list {
+    justify-content: center;
+  }
+
+  .footer-note {
+    font-size: 0.7rem;
+  }
+}
+
+/* Extra small devices (phones under 480px) */
+@media (max-width: 480px) {
+  .chat-panel {
+    height: 500px;
+  }
+
+  .chat-header h1 {
+    font-size: 1.2rem;
+  }
+
+  .chat-header h1 i {
+    font-size: 1rem;
+    padding: 0.3rem;
+  }
+
+  .emergency-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .status-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .progress-container {
+    width: 100%;
+  }
+
+  .input-group {
+    flex-direction: column;
+  }
+
+  .voice-btn {
+    width: 100%;
+  }
+
+  .input-group button#sendButton {
+    width: 100%;
+  }
+
+  .quick-actions {
+    flex-direction: column;
+  }
+
+  .quick-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .info-panel {
+    max-height: 350px;
+  }
+}
+
         .app-container {
             width: 100%;
             max-width: 1200px;
