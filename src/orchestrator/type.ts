@@ -5,7 +5,8 @@ export enum State {
   ASK_LOCATION = "ASK_LOCATION",
   ASK_DEPTH = "ASK_DEPTH",
   EMERGENCY = "EMERGENCY",
-  COMPLETE = "COMPLETE"
+  COMPLETE = "COMPLETE",
+  NO_BURN = "NO_BURN" 
 }
 
 export interface SessionState {

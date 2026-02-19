@@ -1,10 +1,10 @@
-// src/ai/AIService.ts
 import Groq from 'groq-sdk';
 import { State } from '../orchestrator/type';
 
 export interface AIInterpretation {
   answersCurrent: boolean;
   extracted: {
+    confirmed?: 'yes' | 'no' | 'unknown';   // for CONFIRM_BURN
     size?: 'yes' | 'no' | 'unknown';
     location?: 'yes' | 'no' | 'unknown';
     depth?: 'yes' | 'no' | 'unknown';
@@ -14,8 +14,8 @@ export interface AIInterpretation {
 
 export class AIService {
   private groq: Groq;
-  private interpretationModel = 'llama-3.3-70b-versatile'; // Updated
-  private generationModel = 'llama-3.1-8b-instant';       // Updated
+  private interpretationModel = 'llama-3.3-70b-versatile';
+  private generationModel = 'llama-3.1-8b-instant';
 
   constructor() {
     if (!process.env.GROQ_API_KEY) {
@@ -24,9 +24,6 @@ export class AIService {
     this.groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   }
 
-  /**
-   * Determine if user input answers the current triage question.
-   */
   async interpretInput(
     currentState: State,
     history: string[],
@@ -47,23 +44,30 @@ export class AIService {
       });
 
       const content = completion.choices[0]?.message?.content || '{}';
-      return JSON.parse(content) as AIInterpretation;
+      const jsonMatch = content.match(/\{.*\}/s);
+      return JSON.parse(jsonMatch ? jsonMatch[0] : content) as AIInterpretation;
     } catch (error) {
       console.error('Groq interpretation error:', error);
-      // Fallback: assume it does NOT answer current question
+      // Rule‑based fallback
+      const text = userInput.toLowerCase();
+      if (currentState === State.CONFIRM_BURN) {
+        if (text.includes('yes') || text.includes('yeah') || text.includes('yep') || text.includes('i have')) {
+          return { answersCurrent: true, extracted: { confirmed: 'yes' } };
+        }
+        if (text.includes('no') || text.includes('nope') || text.includes('nah')) {
+          return { answersCurrent: true, extracted: { confirmed: 'no' } };
+        }
+      }
+      // For other states, you could add simple keyword checks, but we return false
       return { answersCurrent: false, extracted: {} };
     }
   }
 
-  /**
-   * Generate a Grade 9 reading level response based on next state.
-   */
   async generateResponse(
     nextState: State,
     interpretation?: AIInterpretation
   ): Promise<string> {
-    // For terminal states, return empty (Guardian will use fallback)
-    if (nextState === State.EMERGENCY || nextState === State.COMPLETE) {
+    if (nextState === State.EMERGENCY || nextState === State.COMPLETE || nextState === State.NO_BURN) {
       return '';
     }
 
@@ -78,7 +82,7 @@ export class AIService {
           },
           { role: 'user', content: prompt }
         ],
-        model: this.generationModel, // faster for responses
+        model: this.generationModel,
         temperature: 0.5,
         max_tokens: 100
       });
@@ -90,48 +94,80 @@ export class AIService {
     }
   }
 
-  // ---------- Private helpers ----------
-
   private buildInterpretationPrompt(state: State, history: string[]): string {
     const questionMap: Record<State, string> = {
-      [State.START]: 'Welcome message',
       [State.CONFIRM_BURN]: 'Do you have a burn?',
       [State.CHECK_SEVERITY]: 'Is the burn larger than your palm?',
       [State.ASK_LOCATION]: 'Is the burn on the face, hands, feet, or private areas?',
       [State.ASK_DEPTH]: 'Is the skin white, charred, or peeling?',
+      [State.START]: '',
       [State.EMERGENCY]: '',
-      [State.COMPLETE]: ''
+      [State.COMPLETE]: '',
+      [State.NO_BURN]: ''
     };
-
     const currentQuestion = questionMap[state] || 'Unknown question';
     const historyText = history.length ? history.join('\n') : 'No previous messages.';
+
+    let examples = '';
+    if (state === State.CONFIRM_BURN) {
+      examples = `
+Examples:
+- User: "yes" → answersCurrent: true, extracted: { "confirmed": "yes" }
+- User: "I have a burn" → answersCurrent: true, extracted: { "confirmed": "yes" }
+- User: "no" → answersCurrent: true, extracted: { "confirmed": "no" }
+- User: "hello" → answersCurrent: false
+`;
+    } else if (state === State.CHECK_SEVERITY) {
+      examples = `
+Examples:
+- User: "yes it's large" → answersCurrent: true, extracted: { "size": "yes" }
+- User: "it's small" → answersCurrent: true, extracted: { "size": "no" }
+- User: "I don't know" → answersCurrent: false
+`;
+    } else if (state === State.ASK_LOCATION) {
+      examples = `
+Examples:
+- User: "on my face" → answersCurrent: true, extracted: { "location": "yes" }
+- User: "it's on my arm" → answersCurrent: true, extracted: { "location": "no" }
+- User: "I'm not sure" → answersCurrent: false
+`;
+    } else if (state === State.ASK_DEPTH) {
+      examples = `
+Examples:
+- User: "white and charred" → answersCurrent: true, extracted: { "depth": "yes" }
+- User: "just red" → answersCurrent: true, extracted: { "depth": "no" }
+- User: "it hurts" → answersCurrent: false
+`;
+    }
 
     return `You are a medical triage assistant for burn injuries.
 Current question: "${currentQuestion}"
 Conversation history:
 ${historyText}
-
+${examples}
 Determine if the user's next input answers this question. Respond in JSON format:
 {
-  "answersCurrent": boolean,      // true if the input directly answers the question
+  "answersCurrent": boolean,
   "extracted": {
-    "size": "yes" | "no" | "unknown",      // only relevant for CHECK_SEVERITY
-    "location": "yes" | "no" | "unknown",  // only relevant for ASK_LOCATION
-    "depth": "yes" | "no" | "unknown"      // only relevant for ASK_DEPTH
+    "confirmed": "yes" | "no" | "unknown",   // only for CONFIRM_BURN
+    "size": "yes" | "no" | "unknown",        // only for CHECK_SEVERITY
+    "location": "yes" | "no" | "unknown",    // only for ASK_LOCATION
+    "depth": "yes" | "no" | "unknown"        // only for ASK_DEPTH
   },
-  "explanation": "brief reason for your determination"
+  "explanation": "brief reason"
 }`;
   }
 
   private buildResponsePrompt(state: State, interpretation?: AIInterpretation): string {
     const questionMap: Record<State, string> = {
-      [State.START]: 'Welcome message',
       [State.CONFIRM_BURN]: 'Do you have a burn?',
       [State.CHECK_SEVERITY]: 'Is the burn larger than your palm?',
       [State.ASK_LOCATION]: 'Is the burn on the face, hands, feet, or private areas?',
       [State.ASK_DEPTH]: 'What does the burned skin look like? (white, charred, peeling?)',
+      [State.START]: '',
       [State.EMERGENCY]: '',
-      [State.COMPLETE]: ''
+      [State.COMPLETE]: '',
+      [State.NO_BURN]: ''
     };
     const nextQuestion = questionMap[state] || 'How can I help?';
     const answerInfo = interpretation ? `Based on their answer: ${JSON.stringify(interpretation.extracted)}` : '';
@@ -142,13 +178,14 @@ Generate a helpful, simple response at a 9th grade reading level. Keep it to 1-2
 
   private getFallbackResponse(state: State): string {
     const fallbacks: Record<State, string> = {
-      [State.START]: 'Welcome. Do you have a burn?',
+      [State.START]: 'Welcome to burn assessment. Do you have a burn injury?',
       [State.CONFIRM_BURN]: 'Do you have a burn?',
       [State.CHECK_SEVERITY]: 'Is the burn larger than your palm?',
       [State.ASK_LOCATION]: 'Where is the burn? On face, hands, feet, or private areas?',
       [State.ASK_DEPTH]: 'What does the burned skin look like? Is it white, charred, or peeling?',
       [State.EMERGENCY]: 'EMERGENCY: Safety violation detected. Call 112 immediately.',
-      [State.COMPLETE]: 'Assessment complete. Please see the recommendations above.'
+      [State.COMPLETE]: 'Assessment complete. See recommendations above.',
+      [State.NO_BURN]: "You said you don't have a burn. If that's correct, you don't need burn triage. Stay safe!"
     };
     return fallbacks[state] || 'How can I help you?';
   }
